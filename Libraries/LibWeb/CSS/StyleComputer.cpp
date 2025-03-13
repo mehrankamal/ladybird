@@ -595,36 +595,80 @@ static void sort_matching_rules(Vector<MatchingRule const*>& matching_rules)
 
 void StyleComputer::for_each_property_expanding_shorthands(PropertyID property_id, CSSStyleValue const& value, AllowUnresolved allow_unresolved, Function<void(PropertyID, CSSStyleValue const&)> const& set_longhand_property)
 {
-    auto map_logical_property_to_real_property = [](PropertyID property_id) -> Optional<PropertyID> {
+
+    auto writing_mode = WritingMode::VerticalRl;
+    auto map_logical_property_to_real_property = [writing_mode](PropertyID property_id) -> Optional<PropertyID> {
         // FIXME: Honor writing-mode, direction and text-orientation.
         switch (property_id) {
         case PropertyID::BlockSize:
+            if (writing_mode == WritingMode::VerticalRl) {
+                return PropertyID::Width;
+            }
             return PropertyID::Height;
         case PropertyID::MarginBlockStart:
+            if (writing_mode == WritingMode::VerticalRl) {
+                return PropertyID::MarginRight;
+            }
             return PropertyID::MarginTop;
         case PropertyID::MarginBlockEnd:
+            if (writing_mode == WritingMode::VerticalRl) {
+                return PropertyID::MarginLeft;
+            }
             return PropertyID::MarginBottom;
         case PropertyID::MarginInlineStart:
+            if (writing_mode == WritingMode::VerticalRl) {
+                return PropertyID::MarginTop;
+            }
             return PropertyID::MarginLeft;
         case PropertyID::MarginInlineEnd:
+            if (writing_mode == WritingMode::VerticalRl) {
+                return PropertyID::MarginBottom;
+            }
             return PropertyID::MarginRight;
         case PropertyID::PaddingBlockStart:
+            if (writing_mode == WritingMode::VerticalRl) {
+                return PropertyID::PaddingRight;
+            }
             return PropertyID::PaddingTop;
         case PropertyID::PaddingBlockEnd:
+            if (writing_mode == WritingMode::VerticalRl) {
+                return PropertyID::PaddingLeft;
+            }
             return PropertyID::PaddingBottom;
         case PropertyID::PaddingInlineStart:
+            if (writing_mode == WritingMode::VerticalRl) {
+                return PropertyID::PaddingTop;
+            }
             return PropertyID::PaddingLeft;
         case PropertyID::PaddingInlineEnd:
+            if (writing_mode == WritingMode::VerticalRl) {
+                return PropertyID::PaddingBottom;
+            }
             return PropertyID::PaddingRight;
         case PropertyID::InlineSize:
+            if (writing_mode == WritingMode::VerticalRl) {
+                return PropertyID::Height;
+            }
             return PropertyID::Width;
         case PropertyID::InsetBlockStart:
+            if (writing_mode == WritingMode::VerticalRl) {
+                return PropertyID::Right;
+            }
             return PropertyID::Top;
         case PropertyID::InsetBlockEnd:
+            if (writing_mode == WritingMode::VerticalRl) {
+                return PropertyID::Left;
+            }
             return PropertyID::Bottom;
         case PropertyID::InsetInlineStart:
+            if (writing_mode == WritingMode::VerticalRl) {
+                return PropertyID::Top;
+            }
             return PropertyID::Left;
         case PropertyID::InsetInlineEnd:
+            if (writing_mode == WritingMode::VerticalRl) {
+                return PropertyID::Bottom;
+            }
             return PropertyID::Right;
         default:
             return {};
@@ -635,20 +679,38 @@ void StyleComputer::for_each_property_expanding_shorthands(PropertyID property_i
         PropertyID start;
         PropertyID end;
     };
-    auto map_logical_property_to_real_properties = [](PropertyID property_id) -> Optional<StartAndEndPropertyIDs> {
+    auto map_logical_property_to_real_properties = [writing_mode](PropertyID property_id) -> Optional<StartAndEndPropertyIDs> {
         // FIXME: Honor writing-mode, direction and text-orientation.
         switch (property_id) {
         case PropertyID::MarginBlock:
+            if (writing_mode == WritingMode::VerticalRl) {
+                return StartAndEndPropertyIDs { PropertyID::MarginRight, PropertyID::MarginLeft };
+            }
             return StartAndEndPropertyIDs { PropertyID::MarginTop, PropertyID::MarginBottom };
         case PropertyID::MarginInline:
+            if (writing_mode == WritingMode::VerticalRl) {
+                return StartAndEndPropertyIDs { PropertyID::MarginTop, PropertyID::MarginBottom };
+            }
             return StartAndEndPropertyIDs { PropertyID::MarginLeft, PropertyID::MarginRight };
         case PropertyID::PaddingBlock:
+            if (writing_mode == WritingMode::VerticalRl) {
+                return StartAndEndPropertyIDs { PropertyID::PaddingRight, PropertyID::PaddingLeft };
+            }
             return StartAndEndPropertyIDs { PropertyID::PaddingTop, PropertyID::PaddingBottom };
         case PropertyID::PaddingInline:
+            if (writing_mode == WritingMode::VerticalRl) {
+                return StartAndEndPropertyIDs { PropertyID::PaddingTop, PropertyID::PaddingBottom };
+            }
             return StartAndEndPropertyIDs { PropertyID::PaddingLeft, PropertyID::PaddingRight };
         case PropertyID::InsetBlock:
+            if (writing_mode == WritingMode::VerticalRl) {
+                return StartAndEndPropertyIDs { PropertyID::Right, PropertyID::Left };
+            }
             return StartAndEndPropertyIDs { PropertyID::Top, PropertyID::Bottom };
         case PropertyID::InsetInline:
+            if (writing_mode == WritingMode::VerticalRl) {
+                return StartAndEndPropertyIDs { PropertyID::Top, PropertyID::Bottom };
+            }
             return StartAndEndPropertyIDs { PropertyID::Left, PropertyID::Right };
         default:
             return {};
@@ -845,7 +907,7 @@ void StyleComputer::for_each_property_expanding_shorthands(PropertyID property_i
 
     if (property_id == CSS::PropertyID::MaxInlineSize || property_id == CSS::PropertyID::MinInlineSize) {
         // FIXME: Use writing-mode to determine if we should set width or height.
-        bool is_horizontal = true;
+        bool is_horizontal = writing_mode == WritingMode::HorizontalTb;
 
         if (is_horizontal) {
             if (property_id == CSS::PropertyID::MaxInlineSize) {
@@ -865,7 +927,7 @@ void StyleComputer::for_each_property_expanding_shorthands(PropertyID property_i
 
     if (property_id == CSS::PropertyID::MaxBlockSize || property_id == CSS::PropertyID::MinBlockSize) {
         // FIXME: Use writing-mode to determine if we should set width or height.
-        bool is_horizontal = true;
+        bool is_horizontal = writing_mode == WritingMode::HorizontalTb;
 
         if (is_horizontal) {
             if (property_id == CSS::PropertyID::MaxBlockSize) {
@@ -914,9 +976,17 @@ void StyleComputer::for_each_property_expanding_shorthands(PropertyID property_i
 
         // FIXME: Honor writing-mode, direction and text-orientation.
         if (keyword == Keyword::InlineStart) {
+            if (writing_mode == WritingMode::VerticalRl) {
+                set_longhand_property(CSS::PropertyID::Float, CSSKeywordValue::create(Keyword::Top));
+                return;
+            }
             set_longhand_property(CSS::PropertyID::Float, CSSKeywordValue::create(Keyword::Left));
             return;
         } else if (keyword == Keyword::InlineEnd) {
+            if (writing_mode == WritingMode::VerticalRl) {
+                set_longhand_property(CSS::PropertyID::Float, CSSKeywordValue::create(Keyword::Bottom));
+                return;
+            }
             set_longhand_property(CSS::PropertyID::Float, CSSKeywordValue::create(Keyword::Right));
             return;
         }

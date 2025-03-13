@@ -10,6 +10,7 @@
 #include <AK/Format.h>
 #include <AK/NonnullRefPtr.h>
 #include <LibWeb/CSS/ComputedProperties.h>
+#include <LibWeb/CSS/Enums.h>
 #include <LibWeb/CSS/ResolvedCSSStyleDeclaration.h>
 #include <LibWeb/CSS/StyleComputer.h>
 #include <LibWeb/CSS/StyleValues/BackgroundRepeatStyleValue.h>
@@ -102,39 +103,66 @@ static NonnullRefPtr<CSSStyleValue const> style_value_for_size(Size const& size)
     TODO();
 }
 
-enum class LogicalSide {
+enum class LogicalSide : u8 {
     BlockStart,
     BlockEnd,
     InlineStart,
     InlineEnd,
 };
-static RefPtr<CSSStyleValue const> style_value_for_length_box_logical_side(Layout::NodeWithStyle const&, LengthBox const& box, LogicalSide logical_side)
+
+static RefPtr<CSSStyleValue const> style_value_for_length_box_logical_side(Layout::NodeWithStyle const& node, LengthBox const& box, LogicalSide logical_side)
 {
     // FIXME: Actually determine the logical sides based on layout_node's writing-mode and direction.
+    auto writing_mode = node.computed_values().writing_mode();
     switch (logical_side) {
     case LogicalSide::BlockStart:
+        if (writing_mode == WritingMode::VerticalLr) {
+            return style_value_for_length_percentage(box.right());
+        }
         return style_value_for_length_percentage(box.top());
     case LogicalSide::BlockEnd:
+        if (writing_mode == WritingMode::VerticalLr) {
+            return style_value_for_length_percentage(box.left());
+        }
         return style_value_for_length_percentage(box.bottom());
     case LogicalSide::InlineStart:
+        if (writing_mode == WritingMode::VerticalLr) {
+            return style_value_for_length_percentage(box.top());
+        }
         return style_value_for_length_percentage(box.left());
     case LogicalSide::InlineEnd:
+        if (writing_mode == WritingMode::VerticalLr) {
+            return style_value_for_length_percentage(box.bottom());
+        }
         return style_value_for_length_percentage(box.right());
     }
     VERIFY_NOT_REACHED();
 }
 
-static CSSPixels pixels_for_pixel_box_logical_side(Layout::NodeWithStyle const&, Painting::PixelBox const& box, LogicalSide logical_side)
+static CSSPixels pixels_for_pixel_box_logical_side(Layout::NodeWithStyle const& node, Painting::PixelBox const& box, LogicalSide logical_side)
 {
     // FIXME: Actually determine the logical sides based on layout_node's writing-mode and direction.
+    auto writing_mode = node.computed_values().writing_mode();
     switch (logical_side) {
     case LogicalSide::BlockStart:
+        if (writing_mode == WritingMode::VerticalLr) {
+            return box.right;
+        }
         return box.top;
     case LogicalSide::BlockEnd:
+        if (writing_mode == WritingMode::VerticalLr) {
+            return box.left;
+        }
         return box.bottom;
     case LogicalSide::InlineStart:
+        if (writing_mode == WritingMode::VerticalLr) {
+            return box.top;
+        }
         return box.left;
     case LogicalSide::InlineEnd:
+        if (writing_mode == WritingMode::VerticalLr) {
+            return box.bottom;
+        }
         return box.right;
     }
     VERIFY_NOT_REACHED();

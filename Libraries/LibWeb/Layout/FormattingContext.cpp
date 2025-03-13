@@ -1393,8 +1393,15 @@ void FormattingContext::compute_inset(NodeWithStyleAndBoxModelMetrics const& box
     auto const& computed_values = box.computed_values();
 
     // FIXME: Respect the containing block's writing-mode.
-    resolve_two_opposing_insets(computed_values.inset().left(), computed_values.inset().right(), box_state.inset_left, box_state.inset_right, containing_block_size.width());
-    resolve_two_opposing_insets(computed_values.inset().top(), computed_values.inset().bottom(), box_state.inset_top, box_state.inset_bottom, containing_block_size.height());
+    auto writing_mode = computed_values.writing_mode();
+    dbgln("Containing block writing mode {}", (u8)writing_mode);
+    if (writing_mode == CSS::WritingMode::VerticalRl) {
+        resolve_two_opposing_insets(computed_values.inset().left(), computed_values.inset().right(), box_state.inset_top, box_state.inset_bottom, containing_block_size.height());
+        resolve_two_opposing_insets(computed_values.inset().top(), computed_values.inset().bottom(), box_state.inset_right, box_state.inset_left, containing_block_size.width());
+    } else {
+        resolve_two_opposing_insets(computed_values.inset().left(), computed_values.inset().right(), box_state.inset_left, box_state.inset_right, containing_block_size.width());
+        resolve_two_opposing_insets(computed_values.inset().top(), computed_values.inset().bottom(), box_state.inset_top, box_state.inset_bottom, containing_block_size.height());
+    }
 }
 
 // https://drafts.csswg.org/css-sizing-3/#fit-content-size
