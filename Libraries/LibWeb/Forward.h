@@ -866,6 +866,12 @@ struct VideoConfiguration;
 
 }
 
+namespace Web::MediaCapture {
+
+class MediaDevices;
+
+}
+
 namespace Web::MediaSourceExtensions {
 
 class BufferedChangeEvent;

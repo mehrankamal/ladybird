@@ -74,6 +74,7 @@ void Navigator::visit_edges(Cell::Visitor& visitor)
     visitor.visit(m_service_worker_container);
     visitor.visit(m_media_capabilities);
     visitor.visit(m_credentials);
+    visitor.visit(m_media_devices);
 }
 
 GC::Ref<MimeTypeArray> Navigator::mime_types()
@@ -130,6 +131,13 @@ WebIDL::Long Navigator::max_touch_points()
 {
     dbgln("FIXME: Unimplemented Navigator.maxTouchPoints");
     return 0;
+}
+
+GC::Ref<MediaCapture::MediaDevices> Navigator::media_devices()
+{
+    if(!m_media_devices)
+        m_media_devices = realm().create<MediaCapture::MediaDevices>(realm());
+    return *m_media_devices;
 }
 
 // https://www.w3.org/TR/tracking-dnt/#dom-navigator-donottrack
